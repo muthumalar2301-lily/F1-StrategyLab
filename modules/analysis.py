@@ -11,7 +11,6 @@ def driver_performance(laps: pd.DataFrame) -> pd.DataFrame:
     clean["lap_duration"] = pd.to_numeric(clean["lap_duration"], errors="coerce")
     clean = clean[clean["lap_duration"] > 0]
 
-    # Exclude severe outliers (e.g. red flags or pit in-laps) for reliable average pace
     q_high = clean["lap_duration"].quantile(0.90)
     clean_pace = clean[clean["lap_duration"] <= q_high]
 
@@ -22,7 +21,6 @@ def driver_performance(laps: pd.DataFrame) -> pd.DataFrame:
         fastest_lap=("lap_duration", "min")
     ).reset_index()
 
-    # Calculate mean on representative laps
     avg_times = clean_pace.groupby("driver_number")["lap_duration"].mean().reset_index(name="average_lap_time")
     result = result.merge(avg_times, on="driver_number", how="left")
 
@@ -109,7 +107,7 @@ def calculate_tyre_degradation(laps: pd.DataFrame, stints: pd.DataFrame) -> pd.D
     data["lap_duration"] = pd.to_numeric(data["lap_duration"], errors="coerce")
     data["tyre_age_at_start"] = pd.to_numeric(data["tyre_age_at_start"], errors="coerce").fillna(0)
 
-    # Tyre age represents cumulative laps driven on this rubber set
+
     data["tyre_age"] = (
         data["tyre_age_at_start"] +
         data["lap_number"] -
@@ -118,7 +116,6 @@ def calculate_tyre_degradation(laps: pd.DataFrame, stints: pd.DataFrame) -> pd.D
 
     data = data.dropna(subset=["lap_duration", "tyre_age"])
 
-    # Strict representative lap filtering (5th to 85th percentile per race)
     q_low = data["lap_duration"].quantile(0.05)
     q_high = data["lap_duration"].quantile(0.85)
     data = data[data["lap_duration"].between(q_low, q_high)].copy()
@@ -146,7 +143,6 @@ def fit_fuel_corrected_degradation(
 
     total_race_laps = clean_data["lap_number"].max()
 
-    # Normalization: late-race laps carry less fuel, so we add back the weight advantage
     clean_data["fuel_adjusted_time"] = (
         clean_data["lap_duration"] +
         (total_race_laps - clean_data["lap_number"]) * fuel_penalty_per_lap
@@ -155,12 +151,9 @@ def fit_fuel_corrected_degradation(
 
     models = []
     for compound, group in clean_data.groupby("compound"):
-        # Ensure sufficient sample size and age progression for a stable regression
         if len(group) >= 10 and group["tyre_age"].nunique() >= 4:
-            # Linear fit: y = mx + c
             slope, intercept = np.polyfit(group["tyre_age"], group["fuel_adjusted_time"], 1)
-            
-            # Compute R^2 goodness of fit
+
             fitted_vals = intercept + slope * group["tyre_age"]
             ss_tot = np.sum((group["fuel_adjusted_time"] - group["fuel_adjusted_time"].mean()) ** 2)
             ss_res = np.sum((group["fuel_adjusted_time"] - fitted_vals) ** 2)
