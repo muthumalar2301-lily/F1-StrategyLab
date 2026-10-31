@@ -15,10 +15,6 @@ from modules.analysis import (
     analyze_pitstop_timing
 )
 
-# ----------------------------------
-# PAGE CONFIGURATION
-# ----------------------------------
-
 st.set_page_config(
     page_title="F1 StrategyLab | Telemetry & Intelligence",
     page_icon="🏎️",
@@ -26,9 +22,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ----------------------------------
-# F1 PALETTE & UTILITIES
-# ----------------------------------
 
 COMPOUND_COLORS = {
     "SOFT": "#FF1801",
@@ -45,9 +38,6 @@ def format_laptime(seconds):
     secs = seconds % 60
     return f"{mins}:{secs:06.3f}"
 
-# ----------------------------------
-# MODERN PIT-WALL STYLING (CSS)
-# ----------------------------------
 
 st.markdown("""
 <style>
@@ -150,9 +140,6 @@ h1, h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------------------------
-# LOAD DATA
-# ----------------------------------
 
 @st.cache_data
 def load_data():
@@ -168,9 +155,6 @@ def load_data():
 
 laps, stints, pitstops, weather, drivers = load_data()
 
-# ----------------------------------
-# SIDEBAR NAVIGATION
-# ----------------------------------
 
 with st.sidebar:
     st.markdown("""
@@ -266,9 +250,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.divider()
 
-# ----------------------------------
-# 1. RACE OVERVIEW
-# ----------------------------------
 
 if page == "Race Overview":
     st.subheader("🏁 Race Overview & Operating Parameters")
@@ -326,9 +307,6 @@ if page == "Race Overview":
         fig.update_layout(plot_bgcolor="#111218", paper_bgcolor="#0c0d12", font=dict(color="#ffffff"))
         st.plotly_chart(fig, width="stretch")
 
-# ----------------------------------
-# 2. DRIVER PERFORMANCE
-# ----------------------------------
 
 elif page == "Driver Performance":
     st.subheader("⚡ Driver Pace & Telemetry Metrics")
@@ -375,9 +353,6 @@ elif page == "Driver Performance":
     fig.update_layout(plot_bgcolor="#111218", paper_bgcolor="#0c0d12", font=dict(color="#ffffff"))
     st.plotly_chart(fig, width="stretch")
 
-# ----------------------------------
-# 3. TYRE STRATEGY (WITH GANTT CHART)
-# ----------------------------------
 
 elif page == "Tyre Strategy":
     st.subheader("🛞 Tyre Compound Utilization & Stint Gantt")
@@ -453,9 +428,6 @@ elif page == "Tyre Strategy":
     st.subheader("Compound Statistics Summary")
     st.dataframe(tyre_stats, width="stretch", hide_index=True)
 
-# ----------------------------------
-# 4. PIT STOP ANALYSIS
-# ----------------------------------
 
 elif page == "Pit Stop Analysis":
     st.subheader("⏱️ Pit Lane Efficiency & Duration")
@@ -491,10 +463,6 @@ elif page == "Pit Stop Analysis":
 
     st.dataframe(pit_stats, width="stretch", hide_index=True)
 
-# ----------------------------------
-# 5. STRATEGY INSIGHTS
-# ----------------------------------
-
 elif page == "Strategy Insights":
     st.subheader("💡 Strategic Rules & Crossover Intelligence")
 
@@ -520,10 +488,6 @@ elif page == "Strategy Insights":
         insights = generate_recommendations(laps, stints, pitstops, drivers, weather)
         for insight in insights:
             st.success(insight)
-
-# ----------------------------------
-# 6. ADVANCED ANALYTICS (WITH SLOPES)
-# ----------------------------------
 
 elif page == "Advanced Analytics":
     st.subheader("📈 Fuel-Corrected Degradation & Degradation Slopes")
@@ -628,9 +592,6 @@ elif page == "Advanced Analytics":
         fig.update_layout(plot_bgcolor="#111218", paper_bgcolor="#0c0d12", font=dict(color="#ffffff"))
         st.plotly_chart(fig, width="stretch")
 
-# ----------------------------------
-# 7. PIT WINDOW SIMULATOR
-# ----------------------------------
 
 elif page == "Pit Window Simulator":
     st.subheader("🧠 Tactical Undercut / Overcut Simulator")
@@ -684,10 +645,6 @@ elif page == "Pit Window Simulator":
         yaxis=dict(gridcolor="#1e202b")
     )
     st.plotly_chart(fig_waterfall, width="stretch")
-
-# ----------------------------------
-# 8. DRIVER COMPARISON
-# ----------------------------------
 
 elif page == "Driver Comparison":
     st.subheader("⚔️ Head-to-Head Telemetry Comparison")
@@ -753,10 +710,6 @@ elif page == "Driver Comparison":
         )
     else:
         st.warning("No representative lap data available for selected drivers.")
-
-# ----------------------------------
-# FOOTER
-# ----------------------------------
 
 st.divider()
 st.caption("F1 StrategyLab | Formula 1 Race Intelligence Platform | Built for AQX Data Bowl 4.0")

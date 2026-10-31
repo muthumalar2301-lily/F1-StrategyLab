@@ -10,7 +10,6 @@ def generate_recommendations(laps, stints, pitstops, drivers, weather=None):
     """
     insights = []
 
-    # Merge lap and stint metadata
     df = laps.merge(
         stints[["driver_number", "stint_number", "compound", "lap_start", "lap_end"]],
         on="driver_number",
@@ -18,8 +17,7 @@ def generate_recommendations(laps, stints, pitstops, drivers, weather=None):
     )
     df = df[(df["lap_number"] >= df["lap_start"]) & (df["lap_number"] <= df["lap_end"])].copy()
     df["lap_duration"] = pd.to_numeric(df["lap_duration"], errors="coerce")
-    
-    # Exclude outliers (pit laps, safety car neutralizations)
+
     q_low = df["lap_duration"].quantile(0.05)
     q_high = df["lap_duration"].quantile(0.85)
     clean_df = df[df["lap_duration"].between(q_low, q_high)].copy()
@@ -29,15 +27,11 @@ def generate_recommendations(laps, stints, pitstops, drivers, weather=None):
 
     total_race_laps = int(clean_df["lap_number"].max())
 
-    # Apply 0.035s / lap fuel correction to isolate pure tyre grip loss
     clean_df["fuel_adjusted_time"] = (
         clean_df["lap_duration"] + (total_race_laps - clean_df["lap_number"]) * 0.035
     )
     clean_df["compound_upper"] = clean_df["compound"].astype(str).str.upper()
 
-    # ----------------------------------------------------
-    # 1. Crossover Point Analysis (Inters vs. Slicks)
-    # ----------------------------------------------------
     inters = clean_df[clean_df["compound_upper"].str.contains("INTERMEDIATE|WET")]
     slicks = clean_df[clean_df["compound_upper"].str.contains("SOFT|MEDIUM|HARD")]
 
@@ -56,7 +50,6 @@ def generate_recommendations(laps, stints, pitstops, drivers, weather=None):
 
             if inter_time and slick_times:
                 min_slick = min(slick_times)
-                # Dry tyre pace matches or overtakes intermediate pace
                 if min_slick <= inter_time:
                     crossover_laps.append((lap, min_slick, inter_time))
 
@@ -75,9 +68,6 @@ def generate_recommendations(laps, stints, pitstops, drivers, weather=None):
                 f"{avg_slick:.2f}s on dry slicks (Net Delta: {abs(avg_slick - avg_inter):.2f}s)."
             )
 
-    # ----------------------------------------------------
-    # 2. Fuel-Corrected Degradation Cliff Detection
-    # ----------------------------------------------------
     clean_df["tyre_age"] = clean_df["lap_number"] - clean_df["lap_start"] + 1
 
     deg_thresholds = []
@@ -87,7 +77,6 @@ def generate_recommendations(laps, stints, pitstops, drivers, weather=None):
         age_pace = group.groupby("tyre_age")["fuel_adjusted_time"].median()
         if len(age_pace) >= 7:
             base_pace = age_pace.iloc[:3].mean()
-            # A degradation cliff occurs when normalized pace falls off by > 1.20s
             cliff = age_pace[age_pace > (base_pace + 1.20)]
             if not cliff.empty:
                 cliff_age = cliff.index[0]
@@ -104,15 +93,11 @@ def generate_recommendations(laps, stints, pitstops, drivers, weather=None):
             "📊 **Tyre Wear Profile:** Consistent wear slopes detected without sudden thermal cliffs under prevailing track temperatures."
         )
 
-    # ----------------------------------------------------
-    # 3. Pit Stop Efficiency & Loss Benchmark
-    # ----------------------------------------------------
     if not pitstops.empty:
         valid_pits = pitstops.copy()
         valid_pits["pit_duration"] = pd.to_numeric(valid_pits["pit_duration"], errors="coerce")
         valid_pits = valid_pits.dropna(subset=["pit_duration"])
 
-        # Exclude extended stops (e.g. wing changes, double stacks)
         pit_median = valid_pits["pit_duration"].median()
         standard_pits = valid_pits[valid_pits["pit_duration"] <= pit_median * 1.4]
 

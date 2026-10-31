@@ -107,7 +107,6 @@ def calculate_tyre_degradation(laps: pd.DataFrame, stints: pd.DataFrame) -> pd.D
     data["lap_duration"] = pd.to_numeric(data["lap_duration"], errors="coerce")
     data["tyre_age_at_start"] = pd.to_numeric(data["tyre_age_at_start"], errors="coerce").fillna(0)
 
-
     data["tyre_age"] = (
         data["tyre_age_at_start"] +
         data["lap_number"] -
@@ -153,7 +152,6 @@ def fit_fuel_corrected_degradation(
     for compound, group in clean_data.groupby("compound"):
         if len(group) >= 10 and group["tyre_age"].nunique() >= 4:
             slope, intercept = np.polyfit(group["tyre_age"], group["fuel_adjusted_time"], 1)
-
             fitted_vals = intercept + slope * group["tyre_age"]
             ss_tot = np.sum((group["fuel_adjusted_time"] - group["fuel_adjusted_time"].mean()) ** 2)
             ss_res = np.sum((group["fuel_adjusted_time"] - fitted_vals) ** 2)
